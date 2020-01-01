@@ -72,8 +72,8 @@ class TFRecordDataset:
         assert len(tfr_files) >= 1
         tfr_shapes = []
         for tfr_file in tfr_files:
-            tfr_opt = tf.python_io.TFRecordOptions(tf.python_io.TFRecordCompressionType.NONE)
-            for record in tf.python_io.tf_record_iterator(tfr_file, tfr_opt):
+            tfr_opt = tf.io.TFRecordOptions(tf.io.TFRecordCompressionType.NONE)
+            for record in tf.io.tf_record_iterator(tfr_file, tfr_opt):
                 tfr_shapes.append(parse_tfrecord_np(record).shape)
                 break
 
