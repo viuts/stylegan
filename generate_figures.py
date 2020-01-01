@@ -24,16 +24,13 @@ url_bedrooms    = 'https://drive.google.com/uc?id=1MOSKeGF0FJcivpBI7s63V9YHloUTO
 url_cars        = 'https://drive.google.com/uc?id=1MJ6iCfNtMIRicihwRorsM3b7mmtmK9c3' # karras2019stylegan-cars-512x384.pkl
 url_cats        = 'https://drive.google.com/uc?id=1MQywl0FNt6lHu8E_EUqnRbviagS7fbiJ' # karras2019stylegan-cats-256x256.pkl
 
-synthesis_kwargs = dict(output_transform=dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True), minibatch_size=8)
+synthesis_kwargs = dict(output_transform=dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True), minibatch_size=8, truncation_psi=0.7)
 
 _Gs_cache = dict()
 
 def load_Gs(url):
-    if url not in _Gs_cache:
-        with dnnlib.util.open_url(url, cache_dir=config.cache_dir) as f:
-            _G, _D, Gs = pickle.load(f)
-        _Gs_cache[url] = Gs
-    return _Gs_cache[url]
+    _G, _D, Gs = pickle.load(open("results/02051-sgan-faces-2gpu/network-snapshot-021980.pkl", "rb"))
+    return Gs
 
 #----------------------------------------------------------------------------
 # Figures 2, 3, 10, 11, 12: Multi-resolution grid of uncurated result images.
@@ -85,7 +82,7 @@ def draw_noise_detail_figure(png, Gs, w, h, num_samples, seeds):
     canvas = PIL.Image.new('RGB', (w * 3, h * len(seeds)), 'white')
     for row, seed in enumerate(seeds):
         latents = np.stack([np.random.RandomState(seed).randn(Gs.input_shape[1])] * num_samples)
-        images = Gs.run(latents, None, truncation_psi=1, **synthesis_kwargs)
+        images = Gs.run(latents, None, **synthesis_kwargs)
         canvas.paste(PIL.Image.fromarray(images[0], 'RGB'), (0, row * h))
         for i in range(4):
             crop = PIL.Image.fromarray(images[i + 1], 'RGB')
@@ -109,7 +106,7 @@ def draw_noise_components_figure(png, Gs, w, h, seeds, noise_ranges, flips):
     all_images = []
     for noise_range in noise_ranges:
         tflib.set_vars({var: val * (1 if i in noise_range else 0) for i, (var, val) in enumerate(noise_pairs)})
-        range_images = Gsc.run(latents, None, truncation_psi=1, randomize_noise=False, **synthesis_kwargs)
+        range_images = Gsc.run(latents, None, randomize_noise=False, **synthesis_kwargs)
         range_images[flips, :, :] = range_images[flips, :, ::-1]
         all_images.append(list(range_images))
 
@@ -143,15 +140,13 @@ def draw_truncation_trick_figure(png, Gs, w, h, seeds, psis):
 
 def main():
     tflib.init_tf()
-    os.makedirs(config.result_dir, exist_ok=True)
-    draw_uncurated_result_figure(os.path.join(config.result_dir, 'figure02-uncurated-ffhq.png'), load_Gs(url_ffhq), cx=0, cy=0, cw=1024, ch=1024, rows=3, lods=[0,1,2,2,3,3], seed=5)
-    draw_style_mixing_figure(os.path.join(config.result_dir, 'figure03-style-mixing.png'), load_Gs(url_ffhq), w=1024, h=1024, src_seeds=[639,701,687,615,2268], dst_seeds=[888,829,1898,1733,1614,845], style_ranges=[range(0,4)]*3+[range(4,8)]*2+[range(8,18)])
-    draw_noise_detail_figure(os.path.join(config.result_dir, 'figure04-noise-detail.png'), load_Gs(url_ffhq), w=1024, h=1024, num_samples=100, seeds=[1157,1012])
-    draw_noise_components_figure(os.path.join(config.result_dir, 'figure05-noise-components.png'), load_Gs(url_ffhq), w=1024, h=1024, seeds=[1967,1555], noise_ranges=[range(0, 18), range(0, 0), range(8, 18), range(0, 8)], flips=[1])
-    draw_truncation_trick_figure(os.path.join(config.result_dir, 'figure08-truncation-trick.png'), load_Gs(url_ffhq), w=1024, h=1024, seeds=[91,388], psis=[1, 0.7, 0.5, 0, -0.5, -1])
-    draw_uncurated_result_figure(os.path.join(config.result_dir, 'figure10-uncurated-bedrooms.png'), load_Gs(url_bedrooms), cx=0, cy=0, cw=256, ch=256, rows=5, lods=[0,0,1,1,2,2,2], seed=0)
-    draw_uncurated_result_figure(os.path.join(config.result_dir, 'figure11-uncurated-cars.png'), load_Gs(url_cars), cx=0, cy=64, cw=512, ch=384, rows=4, lods=[0,1,2,2,3,3], seed=2)
-    draw_uncurated_result_figure(os.path.join(config.result_dir, 'figure12-uncurated-cats.png'), load_Gs(url_cats), cx=0, cy=0, cw=256, ch=256, rows=5, lods=[0,0,1,1,2,2,2], seed=1)
+    destination = os.path.join(config.result_dir ,'figure')
+    os.makedirs(destination, exist_ok=True)
+    draw_uncurated_result_figure(os.path.join(destination, 'figure02-uncurated-ffhq.png'), load_Gs(url_ffhq), cx=0, cy=0, cw=512, ch=512, rows=3, lods=[0,1,2,2,3,3], seed=5)
+    draw_style_mixing_figure(os.path.join(destination, 'figure03-style-mixing.png'), load_Gs(url_ffhq), w=512, h=512, src_seeds=[639,701,687,615,2268], dst_seeds=[888,829,1898,1733,1614,845], style_ranges=[range(0,4)]*3+[range(4,8)]*2+[range(8,16)])
+    draw_noise_detail_figure(os.path.join(destination, 'figure04-noise-detail.png'), load_Gs(url_ffhq), w=512, h=512, num_samples=100, seeds=[1157,1012])
+    draw_noise_components_figure(os.path.join(destination, 'figure05-noise-components.png'), load_Gs(url_ffhq), w=512, h=512, seeds=[1967,1555], noise_ranges=[range(0, 18), range(0, 0), range(8, 18), range(0, 8)], flips=[1])
+    draw_truncation_trick_figure(os.path.join(destination, 'figure08-truncation-trick.png'), load_Gs(url_ffhq), w=512, h=512, seeds=[91,388, 389, 390, 391, 392, 393, 394, 395, 396], psis=[1, 0.7, 0.5, 0.25, 0, -0.25, -0.5, -1])
 
 #----------------------------------------------------------------------------
 
