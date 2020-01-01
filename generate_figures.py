@@ -15,6 +15,8 @@ import dnnlib
 import dnnlib.tflib as tflib
 import config
 
+from training import misc
+
 #----------------------------------------------------------------------------
 # Helpers for loading and using pre-trained generators.
 
@@ -140,13 +142,15 @@ def draw_truncation_trick_figure(png, Gs, w, h, seeds, psis):
 
 def main():
     tflib.init_tf()
+    network_pkl, _ = misc.locate_latest_pkl()
+    _G, _D, Gs = pickle.load(open(network_pkl, "rb"))
     destination = os.path.join(config.result_dir ,'figure')
     os.makedirs(destination, exist_ok=True)
-    draw_uncurated_result_figure(os.path.join(destination, 'figure02-uncurated-ffhq.png'), load_Gs(url_ffhq), cx=0, cy=0, cw=512, ch=512, rows=3, lods=[0,1,2,2,3,3], seed=5)
-    draw_style_mixing_figure(os.path.join(destination, 'figure03-style-mixing.png'), load_Gs(url_ffhq), w=512, h=512, src_seeds=[639,701,687,615,2268], dst_seeds=[888,829,1898,1733,1614,845], style_ranges=[range(0,4)]*3+[range(4,8)]*2+[range(8,16)])
-    draw_noise_detail_figure(os.path.join(destination, 'figure04-noise-detail.png'), load_Gs(url_ffhq), w=512, h=512, num_samples=100, seeds=[1157,1012])
-    draw_noise_components_figure(os.path.join(destination, 'figure05-noise-components.png'), load_Gs(url_ffhq), w=512, h=512, seeds=[1967,1555], noise_ranges=[range(0, 18), range(0, 0), range(8, 18), range(0, 8)], flips=[1])
-    draw_truncation_trick_figure(os.path.join(destination, 'figure08-truncation-trick.png'), load_Gs(url_ffhq), w=512, h=512, seeds=[91,388, 389, 390, 391, 392, 393, 394, 395, 396], psis=[1, 0.7, 0.5, 0.25, 0, -0.25, -0.5, -1])
+    draw_uncurated_result_figure(os.path.join(destination, 'figure02-uncurated-ffhq.png'), Gs, cx=0, cy=0, cw=512, ch=512, rows=3, lods=[0,1,2,2,3,3], seed=5)
+    draw_style_mixing_figure(os.path.join(destination, 'figure03-style-mixing.png'), Gs, w=512, h=512, src_seeds=[639,701,687,615,2268], dst_seeds=[888,829,1898,1733,1614,845], style_ranges=[range(0,4)]*3+[range(4,8)]*2+[range(8,16)])
+    draw_noise_detail_figure(os.path.join(destination, 'figure04-noise-detail.png'), Gs, w=512, h=512, num_samples=100, seeds=[1157,1012])
+    draw_noise_components_figure(os.path.join(destination, 'figure05-noise-components.png'), Gs, w=512, h=512, seeds=[1967,1555], noise_ranges=[range(0, 18), range(0, 0), range(8, 18), range(0, 8)], flips=[1])
+    draw_truncation_trick_figure(os.path.join(destination, 'figure08-truncation-trick.png'), Gs, w=512, h=512, seeds=[91,388, 389, 390, 391, 392, 393, 394, 395, 396], psis=[1, 0.7, 0.5, 0.25, 0, -0.25, -0.5, -1])
 
 #----------------------------------------------------------------------------
 
