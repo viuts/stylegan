@@ -10,7 +10,7 @@ from training import misc
 
 def main():
     tflib.init_tf()
-    network_pkl, resume_kimg = misc.locate_latest_pkl()
+    network_pkl, _ = misc.locate_latest_pkl()
     _G, _D, Gs = pickle.load(open(network_pkl, "rb"))
     Gs.print_layers()
 
