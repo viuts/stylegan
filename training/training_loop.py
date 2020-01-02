@@ -13,6 +13,7 @@ import tensorflow as tf
 import dnnlib
 import dnnlib.tflib as tflib
 from dnnlib.tflib.autosummary import autosummary
+from tqdm import tqdm
 
 import config
 import train
@@ -216,6 +217,10 @@ def training_loop(
     cur_tick = 0
     tick_start_nimg = cur_nimg
     prev_lod = -1.0
+
+    pbar = tqdm(total=total_kimg * 1000)
+    pbar.update(cur_nimg)
+    pbar.set_description("Next Maintainance %d" % tick_start_nimg + sched.tick_kimg * 1000)
     while cur_nimg < total_kimg * 1000:
         if ctx.should_stop(): break
 
@@ -232,6 +237,7 @@ def training_loop(
             for _D_repeat in range(D_repeats):
                 tflib.run([D_train_op, Gs_update_op], {lod_in: sched.lod, lrate_in: sched.D_lrate, minibatch_in: sched.minibatch})
                 cur_nimg += sched.minibatch
+                pbar.update(sched.minibatch)
             tflib.run([G_train_op], {lod_in: sched.lod, lrate_in: sched.G_lrate, minibatch_in: sched.minibatch})
 
         # Perform maintenance tasks once per tick.
@@ -271,6 +277,7 @@ def training_loop(
             tflib.autosummary.save_summaries(summary_log, cur_nimg)
             ctx.update('%.2f' % sched.lod, cur_epoch=cur_nimg // 1000, max_epoch=total_kimg)
             maintenance_time = ctx.get_last_update_interval() - tick_time
+            pbar.set_description("Next Maintainance %d" % tick_start_nimg + sched.tick_kimg * 1000)
 
     # Write final results.
     misc.save_pkl((G, D, Gs), os.path.join(submit_config.run_dir, 'network-final.pkl'))
