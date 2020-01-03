@@ -220,7 +220,7 @@ def training_loop(
 
     pbar = tqdm(total=total_kimg * 1000)
     pbar.update(cur_nimg)
-    pbar.set_description("Next Maintainance %s" % str(tick_start_nimg + sched.tick_kimg * 1000))
+    pbar.set_postfix(next_maintainance=(tick_start_nimg + sched.tick_kimg * 1000))
     while cur_nimg < total_kimg * 1000:
         if ctx.should_stop(): break
 
@@ -277,11 +277,12 @@ def training_loop(
             tflib.autosummary.save_summaries(summary_log, cur_nimg)
             ctx.update('%.2f' % sched.lod, cur_epoch=cur_nimg // 1000, max_epoch=total_kimg)
             maintenance_time = ctx.get_last_update_interval() - tick_time
-            pbar.set_description("Next Maintainance %s" % str(tick_start_nimg + sched.tick_kimg * 1000))
+            pbar.set_postfix(next_maintainance=(tick_start_nimg + sched.tick_kimg * 1000))
 
     # Write final results.
     misc.save_pkl((G, D, Gs), os.path.join(submit_config.run_dir, 'network-final.pkl'))
     summary_log.close()
+    pbar.close()
 
     ctx.close()
 
